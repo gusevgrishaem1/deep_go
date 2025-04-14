@@ -11,15 +11,14 @@ import (
 
 func ToLittleEndian[T uint16 | uint32 | uint64](number T) T {
 	size := int(unsafe.Sizeof(number))
-	shift := (8 * size) - 8
 	result := T(0)
-	mask := T(0xFF << shift)
 
 	for i := 0; i < size; i++ {
+		mask := T(0xFF << ((8 * size) - 8))
 		hb := number & mask
 		number = number << 8
+		shift := ((8 * size) - 8) - (i * 8)
 		result = result | hb>>shift
-		shift -= 8
 	}
 
 	return result
