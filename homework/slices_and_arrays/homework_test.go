@@ -26,8 +26,6 @@ func NewCircularQueue[T Int](size int) CircularQueue[T] {
 	return CircularQueue[T]{
 		values: data,
 		cap:    size,
-		push:   0,
-		pop:    0,
 	}
 }
 
@@ -37,13 +35,9 @@ func (q *CircularQueue[T]) Push(value T) bool {
 	}
 
 	q.values[q.push] = value
-	q.push++
+	q.push = (q.push + 1) % len(q.values)
 
 	q.cap--
-
-	if q.push == len(q.values) {
-		q.push = 0
-	}
 
 	return true
 }
@@ -54,13 +48,9 @@ func (q *CircularQueue[T]) Pop() bool {
 	}
 
 	q.values[q.pop] = 0
-	q.pop++
+	q.pop = (q.pop + 1) % len(q.values)
 
 	q.cap++
-
-	if q.pop == len(q.values) {
-		q.pop = 0
-	}
 
 	return true
 }
@@ -70,7 +60,7 @@ func (q *CircularQueue[T]) Front() T {
 		return -1
 	}
 
-	return q.values[q.push]
+	return q.values[q.pop]
 }
 
 func (q *CircularQueue[T]) Back() T {
@@ -78,11 +68,11 @@ func (q *CircularQueue[T]) Back() T {
 		return -1
 	}
 
-	if q.pop == 0 {
+	if q.push == 0 {
 		return q.values[len(q.values)-1]
 	}
 
-	return q.values[q.pop-1]
+	return q.values[q.push-1]
 }
 
 func (q *CircularQueue[T]) Empty() bool {
