@@ -21,10 +21,9 @@ type CircularQueue[T Int] struct {
 }
 
 func NewCircularQueue[T Int](size int) CircularQueue[T] {
-	data := make([]T, size)
 
 	return CircularQueue[T]{
-		values: data,
+		values: make([]T, size),
 		cap:    size,
 	}
 }
