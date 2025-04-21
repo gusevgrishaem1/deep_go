@@ -14,7 +14,7 @@ type COWBuffer struct {
 	refs *uint64
 }
 
-func NewCOWBuffer(data []byte) COWBuffer {
+func NewCOWBuffer(data []byte) *COWBuffer {
 	refs := uint64(0)
 
 	buffer := COWBuffer{data: data, refs: &refs}
@@ -23,7 +23,7 @@ func NewCOWBuffer(data []byte) COWBuffer {
 		buffer.Close()
 	})
 
-	return buffer
+	return &buffer
 }
 
 func (b *COWBuffer) Clone() COWBuffer {
