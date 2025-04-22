@@ -9,36 +9,135 @@ import (
 
 // go test -v homework_test.go
 
-type OrderedMap struct {
-	// need to implement
+type KeyType interface {
+	comparable
 }
 
-func NewOrderedMap() OrderedMap {
-	return OrderedMap{} // need to implement
+type ValueType interface {
+	any
 }
 
-func (m *OrderedMap) Insert(key, value int) {
-	// need to implement
+type Node[Key KeyType, Value ValueType] struct {
+	key   Key
+	value Value
+	left  *Node[Key, Value]
+	right *Node[Key, Value]
 }
 
-func (m *OrderedMap) Erase(key int) {
-	// need to implement
+type OrderedMap[Key KeyType, Value ValueType] struct {
+	root  *Node[Key, Value]
+	index map[Key]*Node[Key, Value]
+	less  func(a, b Key) bool
 }
 
-func (m *OrderedMap) Contains(key int) bool {
-	return false // need to implement
+func NewOrderedMap[Key KeyType, Value ValueType](less func(a, b Key) bool) OrderedMap[Key, Value] {
+	return OrderedMap[Key, Value]{
+		index: make(map[Key]*Node[Key, Value]),
+		less:  less,
+	}
 }
 
-func (m *OrderedMap) Size() int {
-	return 0 // need to implement
+func (m *OrderedMap[Key, Value]) Insert(key Key, value Value) {
+	n, exists := m.index[key]
+	if exists {
+		m.insert(n, key, value)
+		return
+	}
+
+	if m.root == nil {
+		m.root = &Node[Key, Value]{key: key, value: value}
+		m.index[key] = m.root
+		return
+	}
+
+	newNode := m.insert(m.root, key, value)
+	m.index[key] = newNode
 }
 
-func (m *OrderedMap) ForEach(action func(int, int)) {
-	// need to implement
+func (m *OrderedMap[Key, Value]) insert(node *Node[Key, Value], key Key, value Value) *Node[Key, Value] {
+	if node == nil {
+		return &Node[Key, Value]{key: key, value: value}
+	}
+
+	if m.less(key, node.key) {
+		node.left = m.insert(node.left, key, value)
+	} else if key != node.key {
+		node.right = m.insert(node.right, key, value)
+	}
+
+	node.value = value
+	return node
+}
+
+func (m *OrderedMap[Key, Value]) Erase(key Key) {
+	_, exists := m.index[key]
+	if !exists {
+		return
+	}
+
+	m.root = m.remove(m.root, key)
+	delete(m.index, key)
+}
+
+func (m *OrderedMap[Key, Value]) remove(node *Node[Key, Value], key Key) *Node[Key, Value] {
+	if node == nil {
+		return nil
+	}
+
+	if m.less(key, node.key) {
+		node.left = m.remove(node.left, key)
+	} else if key != node.key {
+		node.right = m.remove(node.right, key)
+	} else {
+		if node.left == nil {
+			return node.right
+		} else if node.right == nil {
+			return node.left
+		} else {
+			minRight := m.findMin(node.right)
+			node.key = minRight.key
+			node.value = minRight.value
+			m.index[minRight.key] = node
+			node.right = m.remove(node.right, minRight.key)
+		}
+	}
+
+	return node
+}
+
+func (m *OrderedMap[Key, Value]) findMin(node *Node[Key, Value]) *Node[Key, Value] {
+	current := node
+	for current.left != nil {
+		current = current.left
+	}
+	return current
+}
+
+func (m *OrderedMap[Key, Value]) Contains(key Key) bool {
+	_, contains := m.index[key]
+	return contains
+}
+
+func (m *OrderedMap[Key, Value]) Size() int {
+	return len(m.index)
+}
+
+func (m *OrderedMap[Key, Value]) ForEach(action func(Key, Value)) {
+	m.inOrder(m.root, action)
+}
+
+func (m *OrderedMap[Key, Value]) inOrder(node *Node[Key, Value], action func(Key, Value)) {
+	if node == nil {
+		return
+	}
+
+	m.inOrder(node.left, action)
+	action(node.key, node.value)
+	m.inOrder(node.right, action)
 }
 
 func TestCircularQueue(t *testing.T) {
-	data := NewOrderedMap()
+	data := NewOrderedMap[int, int](func(a, b int) bool { return a < b })
 	assert.Zero(t, data.Size())
 
 	data.Insert(10, 10)
