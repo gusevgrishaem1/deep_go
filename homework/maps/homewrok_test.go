@@ -54,19 +54,19 @@ func (m *OrderedMap[Key, Value]) Insert(key Key, value Value) {
 	m.index[key] = newNode
 }
 
-func (m *OrderedMap[Key, Value]) insert(root *Node[Key, Value], key Key, value Value) *Node[Key, Value] {
-	if root == nil {
+func (m *OrderedMap[Key, Value]) insert(node *Node[Key, Value], key Key, value Value) *Node[Key, Value] {
+	if node == nil {
 		return &Node[Key, Value]{key: key, value: value}
 	}
 
-	if m.less(key, root.key) {
-		root.left = m.insert(root.left, key, value)
-	} else if key != root.key {
-		root.right = m.insert(root.right, key, value)
+	if m.less(key, node.key) {
+		node.left = m.insert(node.left, key, value)
+	} else if key != node.key {
+		node.right = m.insert(node.right, key, value)
 	}
 
-	root.value = value
-	return root
+	node.value = value
+	return node
 }
 
 func (m *OrderedMap[Key, Value]) Erase(key Key) {
@@ -79,30 +79,30 @@ func (m *OrderedMap[Key, Value]) Erase(key Key) {
 	delete(m.index, key)
 }
 
-func (m *OrderedMap[Key, Value]) remove(root *Node[Key, Value], key Key) *Node[Key, Value] {
-	if root == nil {
+func (m *OrderedMap[Key, Value]) remove(node *Node[Key, Value], key Key) *Node[Key, Value] {
+	if node == nil {
 		return nil
 	}
 
-	if m.less(key, root.key) {
-		root.left = m.remove(root.left, key)
-	} else if key != root.key {
-		root.right = m.remove(root.right, key)
+	if m.less(key, node.key) {
+		node.left = m.remove(node.left, key)
+	} else if key != node.key {
+		node.right = m.remove(node.right, key)
 	} else {
-		if root.left == nil {
-			return root.right
-		} else if root.right == nil {
-			return root.left
+		if node.left == nil {
+			return node.right
+		} else if node.right == nil {
+			return node.left
 		} else {
-			minRight := m.findMin(root.right)
-			root.key = minRight.key
-			root.value = minRight.value
-			m.index[minRight.key] = root
-			root.right = m.remove(root.right, minRight.key)
+			minRight := m.findMin(node.right)
+			node.key = minRight.key
+			node.value = minRight.value
+			m.index[minRight.key] = node
+			node.right = m.remove(node.right, minRight.key)
 		}
 	}
 
-	return root
+	return node
 }
 
 func (m *OrderedMap[Key, Value]) findMin(node *Node[Key, Value]) *Node[Key, Value] {
@@ -126,14 +126,14 @@ func (m *OrderedMap[Key, Value]) ForEach(action func(Key, Value)) {
 	m.inOrder(m.root, action)
 }
 
-func (m *OrderedMap[Key, Value]) inOrder(n *Node[Key, Value], action func(Key, Value)) {
-	if n == nil {
+func (m *OrderedMap[Key, Value]) inOrder(node *Node[Key, Value], action func(Key, Value)) {
+	if node == nil {
 		return
 	}
 
-	m.inOrder(n.left, action)
-	action(n.key, n.value)
-	m.inOrder(n.right, action)
+	m.inOrder(node.left, action)
+	action(node.key, node.value)
+	m.inOrder(node.right, action)
 }
 
 func TestCircularQueue(t *testing.T) {
