@@ -69,14 +69,6 @@ func (m *OrderedMap[Key, Value]) insert(root *Node[Key, Value], key Key, value V
 	return root
 }
 
-func (m *OrderedMap[Key, Value]) findMin(node *Node[Key, Value]) *Node[Key, Value] {
-	current := node
-	for current.left != nil {
-		current = current.left
-	}
-	return current
-}
-
 func (m *OrderedMap[Key, Value]) Erase(key Key) {
 	_, exists := m.index[key]
 	if !exists {
@@ -111,6 +103,14 @@ func (m *OrderedMap[Key, Value]) remove(root *Node[Key, Value], key Key) *Node[K
 	}
 
 	return root
+}
+
+func (m *OrderedMap[Key, Value]) findMin(node *Node[Key, Value]) *Node[Key, Value] {
+	current := node
+	for current.left != nil {
+		current = current.left
+	}
+	return current
 }
 
 func (m *OrderedMap[Key, Value]) Contains(key Key) bool {
