@@ -11,11 +11,13 @@ func Map[T any](data []T, action func(T) T) []T {
 	for i := range data {
 		data[i] = action(data[i])
 	}
+
 	return data
 }
 
 func Filter[T any](data []T, action func(T) bool) []T {
 	idx := 0
+
 	for i := range data {
 		if !action(data[i]) {
 			continue
@@ -23,6 +25,7 @@ func Filter[T any](data []T, action func(T) bool) []T {
 		data[idx] = data[i]
 		idx++
 	}
+
 	return data[:idx]
 }
 
@@ -30,6 +33,7 @@ func Reduce[T any](data []T, initial T, action func(T, T) T) T {
 	for i := range data {
 		initial = action(data[i], initial)
 	}
+
 	return initial
 }
 
