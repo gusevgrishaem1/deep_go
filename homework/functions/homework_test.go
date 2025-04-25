@@ -15,13 +15,15 @@ func Map[T any](data []T, action func(T) T) []T {
 }
 
 func Filter[T any](data []T, action func(T) bool) []T {
-	filtered := make([]T, 0, len(data))
+	idx := 0
 	for i := range data {
-		if action(data[i]) {
-			filtered = append(filtered, data[i])
+		if !action(data[i]) {
+			continue
 		}
+		data[idx] = data[i]
+		idx++
 	}
-	return filtered
+	return data[:idx]
 }
 
 func Reduce[T any](data []T, initial T, action func(T, T) T) T {
