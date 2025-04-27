@@ -15,7 +15,7 @@ type COWBuffer struct {
 }
 
 func NewCOWBuffer(data []byte) *COWBuffer {
-	refs := uint64(0)
+	refs := uint64(1)
 
 	buffer := COWBuffer{data: data, refs: &refs}
 
@@ -33,8 +33,7 @@ func (b *COWBuffer) Clone() COWBuffer {
 }
 
 func (b *COWBuffer) Close() {
-	b.data = nil
-	b.refs = nil
+	*b.refs--
 }
 
 func (b *COWBuffer) Update(index int, value byte) bool {
@@ -42,7 +41,7 @@ func (b *COWBuffer) Update(index int, value byte) bool {
 		return false
 	}
 
-	if *b.refs == 0 {
+	if *b.refs == 1 {
 		b.data[index] = value
 		return true
 	}
@@ -50,7 +49,7 @@ func (b *COWBuffer) Update(index int, value byte) bool {
 	cloned := make([]byte, len(b.data))
 	copy(cloned, b.data)
 	b.data = cloned
-	*b.refs = 0
+	*b.refs--
 
 	b.data[index] = value
 	return true
@@ -60,8 +59,6 @@ func (b *COWBuffer) String() string {
 	if len(b.data) == 0 {
 		return ""
 	}
-
-	*b.refs += 1
 
 	return unsafe.String(unsafe.SliceData(b.data), len(b.data))
 }
