@@ -36,6 +36,7 @@ func (b *COWBuffer) Close() {
 	if *b.refs == 0 {
 		return
 	}
+
 	*b.refs--
 }
 
