@@ -44,6 +44,10 @@ func (b *COWBuffer) Update(index int, value byte) bool {
 		return false
 	}
 
+	if *b.refs == 0 {
+		return false
+	}
+
 	if *b.refs == 1 {
 		b.data[index] = value
 		return true
