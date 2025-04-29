@@ -8,25 +8,34 @@ import (
 )
 
 func Map[T any](data []T, action func(T) T) []T {
-	for i := range data {
-		data[i] = action(data[i])
+	if data == nil {
+		return nil
 	}
 
-	return data
+	mapped := make([]T, len(data))
+
+	for i := range data {
+		mapped[i] = action(data[i])
+	}
+
+	return mapped
 }
 
 func Filter[T any](data []T, action func(T) bool) []T {
-	idx := 0
+	if data == nil {
+		return nil
+	}
+
+	filtered := make([]T, 0, len(data))
 
 	for i := range data {
 		if !action(data[i]) {
 			continue
 		}
-		data[idx] = data[i]
-		idx++
+		filtered = append(filtered, data[i])
 	}
 
-	return data[:idx]
+	return filtered
 }
 
 func Reduce[T any](data []T, initial T, action func(T, T) T) T {
