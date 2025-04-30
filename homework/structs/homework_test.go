@@ -86,7 +86,7 @@ func WithHealth(health int) func(*GamePerson) {
 func Get10Bits(i int) []byte {
 	return []byte{
 		byte(i),
-		byte(i>>8) | 0b00000011,
+		byte(i>>8) & 0b00000011,
 	}
 }
 
