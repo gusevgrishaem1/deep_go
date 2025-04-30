@@ -77,7 +77,7 @@ func WithHealth(health int) func(*GamePerson) {
 		idx := 60
 
 		for _, b := range Get10Bits(health) {
-			person.data[idx] = b
+			person.data[idx] |= b
 			idx++
 		}
 	}
