@@ -66,7 +66,7 @@ func WithMana(mana int) func(*GamePerson) {
 		idx := 58
 
 		for _, b := range Get10Bits(mana) {
-			person.data[idx] = b
+			person.data[idx] |= b
 			idx++
 		}
 	}
