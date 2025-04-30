@@ -72,6 +72,37 @@ func WithMana(mana int) func(*GamePerson) {
 	}
 }
 
+func WithHouse() func(*GamePerson) {
+	return func(person *GamePerson) {
+		person.data[59] |= 0b00000100
+	}
+}
+
+func WithGun() func(*GamePerson) {
+	return func(person *GamePerson) {
+		person.data[59] |= 0b00001000
+	}
+}
+
+func WithFamily() func(*GamePerson) {
+	return func(person *GamePerson) {
+		person.data[59] |= 0b00010000
+	}
+}
+
+func WithType(personType int) func(*GamePerson) {
+	return func(person *GamePerson) {
+		switch personType {
+		case 0:
+			person.data[59] |= 0b00000000
+		case 1:
+			person.data[59] |= 0b00100000
+		case 2:
+			person.data[59] |= 0b01000000
+		}
+	}
+}
+
 func WithHealth(health int) func(*GamePerson) {
 	return func(person *GamePerson) {
 		idx := 60
@@ -111,37 +142,6 @@ func WithExperience(experience int) func(*GamePerson) {
 func WithLevel(level int) func(*GamePerson) {
 	return func(person *GamePerson) {
 		person.data[63] |= (byte(level) & 0b00001111) << 4
-	}
-}
-
-func WithHouse() func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.data[59] |= 0b00000100
-	}
-}
-
-func WithGun() func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.data[59] |= 0b00001000
-	}
-}
-
-func WithFamily() func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.data[59] |= 0b00010000
-	}
-}
-
-func WithType(personType int) func(*GamePerson) {
-	return func(person *GamePerson) {
-		switch personType {
-		case 0:
-			person.data[59] |= 0b00000000
-		case 1:
-			person.data[59] |= 0b00100000
-		case 2:
-			person.data[59] |= 0b01000000
-		}
 	}
 }
 
@@ -208,6 +208,22 @@ func (p *GamePerson) Mana() int {
 	return int((*(*int16)(unsafe.Add(unsafe.Pointer(&p.data), 58))) & 0b0000001111111111)
 }
 
+func (p *GamePerson) HasHouse() bool {
+	return int((p.data[59]&0b00000100)>>2) == 1
+}
+
+func (p *GamePerson) HasGun() bool {
+	return int((p.data[59]&0b00001000)>>3) == 1
+}
+
+func (p *GamePerson) HasFamilty() bool {
+	return int((p.data[59]&0b00010000)>>4) == 1
+}
+
+func (p *GamePerson) Type() int {
+	return int(p.data[59] >> 5)
+}
+
 func (p *GamePerson) Health() int {
 	return int((*(*int16)(unsafe.Add(unsafe.Pointer(&p.data), 60))) & 0b0000001111111111)
 }
@@ -226,22 +242,6 @@ func (p *GamePerson) Experience() int {
 
 func (p *GamePerson) Level() int {
 	return int((p.data[63] & 0b11110000) >> 4)
-}
-
-func (p *GamePerson) HasHouse() bool {
-	return int((p.data[59]&0b00000100)>>2) == 1
-}
-
-func (p *GamePerson) HasGun() bool {
-	return int((p.data[59]&0b00001000)>>3) == 1
-}
-
-func (p *GamePerson) HasFamilty() bool {
-	return int((p.data[59]&0b00010000)>>4) == 1
-}
-
-func (p *GamePerson) Type() int {
-	return int(p.data[59] >> 5)
 }
 
 func TestGamePerson(t *testing.T) {
