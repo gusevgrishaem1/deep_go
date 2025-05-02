@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"math"
 	"testing"
@@ -15,78 +14,46 @@ type Option func(*GamePerson)
 func WithName(name string) func(*GamePerson) {
 	return func(person *GamePerson) {
 		for i := range name {
-			person.data[i] = name[i]
+			person.PersonName[i] = name[i]
 		}
 	}
 }
 
 func WithCoordinates(x, y, z int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		idx := 42
-
-		for _, b := range Get4Bytes(x) {
-			person.data[idx] = b
-			idx++
-		}
-
-		for _, b := range Get4Bytes(y) {
-			person.data[idx] = b
-			idx++
-		}
-
-		for _, b := range Get4Bytes(z) {
-			person.data[idx] = b
-			idx++
-		}
+		person.CoordX = int32(x)
+		person.CoordY = int32(y)
+		person.CoordZ = int32(z)
 	}
 }
 
 func WithGold(gold int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		idx := 54
-
-		for _, b := range Get4Bytes(gold) {
-			person.data[idx] = b
-			idx++
-		}
-	}
-}
-
-func Get4Bytes(i int) []byte {
-	return []byte{
-		byte(i),
-		byte(i >> 8),
-		byte(i >> 16),
-		byte(i >> 24),
+		person.PersonGold = uint32(gold)
 	}
 }
 
 func WithMana(mana int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		idx := 58
-
-		for _, b := range Get10Bits(mana) {
-			person.data[idx] |= b
-			idx++
-		}
+		person.TypeAndFlagsAndMana |= uint16(mana)
 	}
 }
 
 func WithHouse() func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.data[59] |= 0b00000100
+		person.TypeAndFlagsAndMana |= ((person.TypeAndFlagsAndMana >> 8) | 0b00000100) << 8
 	}
 }
 
 func WithGun() func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.data[59] |= 0b00001000
+		person.TypeAndFlagsAndMana |= ((person.TypeAndFlagsAndMana >> 8) | 0b00001000) << 8
 	}
 }
 
 func WithFamily() func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.data[59] |= 0b00010000
+		person.TypeAndFlagsAndMana |= ((person.TypeAndFlagsAndMana >> 8) | 0b00010000) << 8
 	}
 }
 
@@ -94,54 +61,42 @@ func WithType(personType int) func(*GamePerson) {
 	return func(person *GamePerson) {
 		switch personType {
 		case 0:
-			person.data[59] |= 0b00000000
+			person.TypeAndFlagsAndMana |= ((person.TypeAndFlagsAndMana >> 8) | 0b00000000) << 8
 		case 1:
-			person.data[59] |= 0b00100000
+			person.TypeAndFlagsAndMana |= ((person.TypeAndFlagsAndMana >> 8) | 0b00100000) << 8
 		case 2:
-			person.data[59] |= 0b01000000
+			person.TypeAndFlagsAndMana |= ((person.TypeAndFlagsAndMana >> 8) | 0b01000000) << 8
 		}
 	}
 }
 
 func WithHealth(health int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		idx := 60
-
-		for _, b := range Get10Bits(health) {
-			person.data[idx] |= b
-			idx++
-		}
-	}
-}
-
-func Get10Bits(i int) []byte {
-	return []byte{
-		byte(i),
-		byte(i>>8) & 0b00000011,
+		person.PersonHealth = uint16(health)
 	}
 }
 
 func WithRespect(respect int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.data[62] |= byte(respect) & 0b00001111
+		person.RespectAndStrength |= byte(respect) & 0b00001111
 	}
 }
 
 func WithStrength(strength int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.data[62] |= (byte(strength) & 0b00001111) << 4
+		person.RespectAndStrength |= (byte(strength) & 0b00001111) << 4
 	}
 }
 
 func WithExperience(experience int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.data[63] |= byte(experience) & 0b00001111
+		person.ExperienceAndLevel |= byte(experience) & 0b00001111
 	}
 }
 
 func WithLevel(level int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.data[63] |= (byte(level) & 0b00001111) << 4
+		person.ExperienceAndLevel |= (byte(level) & 0b00001111) << 4
 	}
 }
 
@@ -152,28 +107,15 @@ const (
 )
 
 type GamePerson struct {
-	data [64]byte
-}
-
-func (d GamePerson) MarshalJSON() ([]byte, error) {
-	encoded := base64.StdEncoding.EncodeToString(d.data[:])
-
-	return json.Marshal(encoded)
-}
-
-func (d *GamePerson) UnmarshalJSON(b []byte) error {
-	var encoded string
-	if err := json.Unmarshal(b, &encoded); err != nil {
-		return err
-	}
-
-	decoded, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		return err
-	}
-
-	copy(d.data[:], decoded)
-	return nil
+	PersonName          [42]byte `json:"PersonName"`
+	RespectAndStrength  byte     `json:"RespectAndStrength"`
+	ExperienceAndLevel  byte     `json:"ExperienceAndLevel"`
+	CoordX              int32    `json:"CoordX"`
+	CoordY              int32    `json:"CoordY"`
+	CoordZ              int32    `json:"CoordZ"`
+	PersonGold          uint32   `json:"PersonGold"`
+	TypeAndFlagsAndMana uint16   `json:"TypeAndFlagsAndMana"`
+	PersonHealth        uint16   `json:"PersonHealth"`
 }
 
 func NewGamePerson(options ...Option) GamePerson {
@@ -185,63 +127,63 @@ func NewGamePerson(options ...Option) GamePerson {
 }
 
 func (p *GamePerson) Name() string {
-	return unsafe.String(unsafe.SliceData(p.data[:42]), 42)
+	return unsafe.String(unsafe.SliceData(p.PersonName[:]), len(p.PersonName))
 }
 
 func (p *GamePerson) X() int {
-	return int(*(*int32)(unsafe.Add(unsafe.Pointer(&p.data), 42)))
+	return int(p.CoordX)
 }
 
 func (p *GamePerson) Y() int {
-	return int(*(*int32)(unsafe.Add(unsafe.Pointer(&p.data), 46)))
+	return int(p.CoordY)
 }
 
 func (p *GamePerson) Z() int {
-	return int(*(*int32)(unsafe.Add(unsafe.Pointer(&p.data), 50)))
+	return int(p.CoordZ)
 }
 
 func (p *GamePerson) Gold() int {
-	return int(*(*int32)(unsafe.Add(unsafe.Pointer(&p.data), 54)))
+	return int(p.PersonGold)
 }
 
 func (p *GamePerson) Mana() int {
-	return int((*(*int16)(unsafe.Add(unsafe.Pointer(&p.data), 58))) & 0b0000001111111111)
+	return int(p.TypeAndFlagsAndMana & 0b0000001111111111)
 }
 
 func (p *GamePerson) HasHouse() bool {
-	return int((p.data[59]&0b00000100)>>2) == 1
+	return int(((p.TypeAndFlagsAndMana>>8)&0b00000100)>>2) == 1
 }
 
 func (p *GamePerson) HasGun() bool {
-	return int((p.data[59]&0b00001000)>>3) == 1
+	return int(((p.TypeAndFlagsAndMana>>8)&0b00001000)>>3) == 1
 }
 
 func (p *GamePerson) HasFamilty() bool {
-	return int((p.data[59]&0b00010000)>>4) == 1
+	return int(((p.TypeAndFlagsAndMana>>8)&0b00010000)>>4) == 1
 }
 
 func (p *GamePerson) Type() int {
-	return int(p.data[59] >> 5)
+	return int(p.TypeAndFlagsAndMana >> 13)
 }
 
 func (p *GamePerson) Health() int {
-	return int((*(*int16)(unsafe.Add(unsafe.Pointer(&p.data), 60))) & 0b0000001111111111)
+	return int(p.PersonHealth)
 }
 
 func (p *GamePerson) Respect() int {
-	return int(p.data[62] & 0b00001111)
+	return int(p.RespectAndStrength & 0b00001111)
 }
 
 func (p *GamePerson) Strength() int {
-	return int((p.data[62] & 0b11110000) >> 4)
+	return int((p.RespectAndStrength & 0b11110000) >> 4)
 }
 
 func (p *GamePerson) Experience() int {
-	return int(p.data[63] & 0b00001111)
+	return int(p.ExperienceAndLevel & 0b00001111)
 }
 
 func (p *GamePerson) Level() int {
-	return int((p.data[63] & 0b11110000) >> 4)
+	return int((p.ExperienceAndLevel & 0b11110000) >> 4)
 }
 
 func TestGamePerson(t *testing.T) {
