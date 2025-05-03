@@ -43,20 +43,20 @@ func (c *Container) Resolve(name string) (interface{}, error) {
 	return service(), nil
 }
 
-func (c *Container) RegisterSingletonType(name string, constructor interface{}) interface{} {
+func (c *Container) RegisterSingletonType(name string, constructor interface{}) (interface{}, error) {
 	serviceConstructor, ok := constructor.(func() interface{})
 	if !ok {
-		return nil
+		return nil, errors.New("service not found")
 	}
 
 	singleton, ok := c.singletons[name]
 	if ok {
-		return singleton
+		return singleton, nil
 	}
 
 	c.singletons[name] = serviceConstructor()
 
-	return c.singletons[name]
+	return c.singletons[name], nil
 }
 
 func TestDIContainer(t *testing.T) {
