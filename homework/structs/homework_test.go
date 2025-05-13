@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"gopkg.in/yaml.v3"
 	"math"
 	"testing"
 	"unsafe"
@@ -137,6 +138,27 @@ func (p GamePerson) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m)
 }
 
+func (p GamePerson) MarshalYAML() (interface{}, error) {
+	m := map[string]interface{}{
+		"name":       p.Name(),
+		"respect":    p.Respect(),
+		"strength":   p.Strength(),
+		"level":      p.Level(),
+		"experience": p.Experience(),
+		"x":          p.X(),
+		"y":          p.Y(),
+		"z":          p.Z(),
+		"gold":       p.Gold(),
+		"type":       p.Type(),
+		"health":     p.Health(),
+		"mana":       p.Mana(),
+		"hasHouse":   p.HasHouse(),
+		"hasGun":     p.HasGun(),
+		"hasFamily":  p.HasFamilty(),
+	}
+	return m, nil
+}
+
 func (p *GamePerson) UnmarshalJSON(data []byte) error {
 	m := map[string]interface{}{}
 	if err := json.Unmarshal(data, &m); err != nil {
@@ -160,6 +182,56 @@ func (p *GamePerson) UnmarshalJSON(data []byte) error {
 
 	options := []Option{
 		WithName(m["name"].(string)),
+		WithCoordinates(x, y, z),
+		WithGold(gold),
+		WithMana(mana),
+		WithHealth(health),
+		WithRespect(respect),
+		WithStrength(strength),
+		WithExperience(experience),
+		WithLevel(level),
+		WithType(personType),
+	}
+
+	if hasHouse {
+		options = append(options, WithHouse())
+	}
+	if hasGun {
+		options = append(options, WithGun())
+	}
+	if hasFamily {
+		options = append(options, WithFamily())
+	}
+
+	*p = NewGamePerson(options...)
+
+	return nil
+}
+
+func (p *GamePerson) UnmarshalYAML(value *yaml.Node) error {
+	m := map[string]interface{}{}
+	if err := value.Decode(&m); err != nil {
+		return err
+	}
+
+	name := m["name"].(string)
+	x := m["x"].(int)
+	y := m["y"].(int)
+	z := m["z"].(int)
+	gold := m["gold"].(int)
+	mana := m["mana"].(int)
+	health := m["health"].(int)
+	respect := m["respect"].(int)
+	strength := m["strength"].(int)
+	experience := m["experience"].(int)
+	level := m["level"].(int)
+	personType := m["type"].(int)
+	hasHouse := m["hasHouse"].(bool)
+	hasGun := m["hasGun"].(bool)
+	hasFamily := m["hasFamily"].(bool)
+
+	options := []Option{
+		WithName(name),
 		WithCoordinates(x, y, z),
 		WithGold(gold),
 		WithMana(mana),
@@ -284,11 +356,23 @@ func TestGamePerson(t *testing.T) {
 	}
 
 	person := NewGamePerson(options...)
+
 	jsonData, err := json.Marshal(person)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	err = json.Unmarshal(jsonData, &person)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	yamlData, err := yaml.Marshal(person)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = yaml.Unmarshal(yamlData, &person)
 	if err != nil {
 		t.Fatal(err)
 	}
