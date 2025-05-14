@@ -24,7 +24,7 @@ type Container struct {
 }
 
 func NewContainer() *Container {
-	return &Container{services: make(map[string]func() interface{})}
+	return &Container{services: make(map[string]func() interface{}), singletons: make(map[string]interface{})}
 }
 
 func (c *Container) RegisterType(name string, constructor interface{}) {
