@@ -84,4 +84,16 @@ func TestDIContainer(t *testing.T) {
 	paymentService, err := container.Resolve("PaymentService")
 	assert.Error(t, err)
 	assert.Nil(t, paymentService)
+
+	singleton1, err := container.RegisterSingletonType("SingletonUserService", func() interface{} {
+		return &UserService{}
+	})
+	assert.NoError(t, err)
+
+	singleton2, err := container.RegisterSingletonType("SingletonUserService", func() interface{} {
+		return &UserService{}
+	})
+	assert.NoError(t, err)
+
+	assert.True(t, singleton1 == singleton2)
 }
