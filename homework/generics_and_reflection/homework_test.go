@@ -19,7 +19,7 @@ type Person struct {
 	Married bool   `properties:"married"`
 }
 
-func Serialize(person Person) string {
+func Serialize(person any) string {
 	v := reflect.ValueOf(person)
 
 	var b bytes.Buffer
