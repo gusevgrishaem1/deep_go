@@ -86,6 +86,36 @@ func getValue(v reflect.Value) string {
 		return v.String()
 	case reflect.Bool:
 		return strconv.FormatBool(v.Bool())
+	case reflect.Interface, reflect.Ptr:
+		return v.Interface().(string)
+	case reflect.Array, reflect.Slice:
+		var str strings.Builder
+		for i := 0; i < v.Len(); i++ {
+			if i > 0 {
+				str.WriteString(",")
+			}
+			str.WriteString(getValue(v.Index(i)))
+		}
+		return str.String()
+	case reflect.Map:
+		var str strings.Builder
+		for _, key := range v.MapKeys() {
+			str.WriteString("{")
+			str.WriteString(getValue(v.MapIndex(key)))
+			str.WriteString("}")
+		}
+		return str.String()
+	case reflect.Struct:
+		var str strings.Builder
+		str.WriteString("{")
+		for i := 0; i < v.NumField(); i++ {
+			if i > 0 {
+				str.WriteString(",")
+			}
+			str.WriteString(getValue(v.Field(i)))
+		}
+		str.WriteString("}")
+		return str.String()
 	default:
 		return v.String()
 	}
