@@ -12,92 +12,102 @@ import (
 
 type Option func(*GamePerson)
 
+const (
+	nameSize = 42
+
+	manaMask       = 0x03FF // 10 бит: 00000011 11111111
+	flagsShift     = 8
+	typeShift      = 13
+	houseFlag      = 1 << 2
+	gunFlag        = 1 << 3
+	familyFlag     = 1 << 4
+	typeBuilder    = 0 << typeShift
+	typeBlacksmith = 1 << typeShift
+	typeWarrior    = 2 << typeShift
+	typeMask       = 0xE000 // 3 бит: 11100000 00000000
+
+	// Masks for respectAndStrength / experienceAndLevel
+	low4BitsMask   = 0x0F
+	high4BitsMask  = 0xF0
+	high4BitsShift = 4
+)
+
 func WithName(s string) Option {
 	return func(p *GamePerson) {
 		copy(p.name[:], s)
 	}
 }
 
-func WithCoordinates(x, y, z int) func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.x = int32(x)
-		person.y = int32(y)
-		person.z = int32(z)
+func WithCoordinates(x, y, z int) Option {
+	return func(p *GamePerson) {
+		p.x, p.y, p.z = int32(x), int32(y), int32(z)
 	}
 }
 
-func WithGold(gold int) func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.gold = uint32(gold)
+func WithGold(gold int) Option {
+	return func(p *GamePerson) {
+		p.gold = uint32(gold)
 	}
 }
 
-func WithMana(mana int) func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.typeAndFlagsAndMana |= uint16(mana)
+func WithMana(mana int) Option {
+	return func(p *GamePerson) {
+		p.typeAndFlagsAndMana |= uint16(mana) & manaMask
 	}
 }
 
-func WithHouse() func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.typeAndFlagsAndMana |= ((person.typeAndFlagsAndMana >> 8) | 0b00000100) << 8
+func WithFlag(flag uint16) Option {
+	return func(p *GamePerson) {
+		p.typeAndFlagsAndMana |= flag << flagsShift
 	}
 }
 
-func WithGun() func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.typeAndFlagsAndMana |= ((person.typeAndFlagsAndMana >> 8) | 0b00001000) << 8
-	}
-}
-
-func WithFamily() func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.typeAndFlagsAndMana |= ((person.typeAndFlagsAndMana >> 8) | 0b00010000) << 8
-	}
-}
-
-func WithType(personType int) func(*GamePerson) {
-	return func(person *GamePerson) {
+func WithType(personType int) Option {
+	return func(p *GamePerson) {
 		switch personType {
-		case 0:
-			person.typeAndFlagsAndMana |= ((person.typeAndFlagsAndMana >> 8) | 0b00000000) << 8
-		case 1:
-			person.typeAndFlagsAndMana |= ((person.typeAndFlagsAndMana >> 8) | 0b00100000) << 8
-		case 2:
-			person.typeAndFlagsAndMana |= ((person.typeAndFlagsAndMana >> 8) | 0b01000000) << 8
+		case BuilderGamePersonType:
+			p.typeAndFlagsAndMana |= typeBuilder
+		case BlacksmithGamePersonType:
+			p.typeAndFlagsAndMana |= typeBlacksmith
+		case WarriorGamePersonType:
+			p.typeAndFlagsAndMana |= typeWarrior
 		}
 	}
 }
 
-func WithHealth(health int) func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.personHealth = uint16(health)
+func WithHealth(health int) Option {
+	return func(p *GamePerson) {
+		p.personHealth = uint16(health)
 	}
 }
 
-func WithRespect(respect int) func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.respectAndStrength |= byte(respect) & 0b00001111
+func WithRespect(respect int) Option {
+	return func(p *GamePerson) {
+		p.respectAndStrength |= byte(respect) & low4BitsMask
 	}
 }
 
-func WithStrength(strength int) func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.respectAndStrength |= (byte(strength) & 0b00001111) << 4
+func WithStrength(strength int) Option {
+	return func(p *GamePerson) {
+		p.respectAndStrength |= (byte(strength) & low4BitsMask) << high4BitsShift
 	}
 }
 
-func WithExperience(experience int) func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.experienceAndLevel |= byte(experience) & 0b00001111
+func WithExperience(exp int) Option {
+	return func(p *GamePerson) {
+		p.experienceAndLevel |= byte(exp) & low4BitsMask
 	}
 }
 
-func WithLevel(level int) func(*GamePerson) {
-	return func(person *GamePerson) {
-		person.experienceAndLevel |= (byte(level) & 0b00001111) << 4
+func WithLevel(level int) Option {
+	return func(p *GamePerson) {
+		p.experienceAndLevel |= (byte(level) & low4BitsMask) << high4BitsShift
 	}
 }
+
+func WithHouse() Option  { return WithFlag(houseFlag) }
+func WithGun() Option    { return WithFlag(gunFlag) }
+func WithFamily() Option { return WithFlag(familyFlag) }
 
 const (
 	BuilderGamePersonType = iota
@@ -105,16 +115,15 @@ const (
 	WarriorGamePersonType
 )
 
+// GamePerson представляет игрового персонажа с компактным(64 байта) представлением в памяти.
 type GamePerson struct {
-	name                [42]byte
-	respectAndStrength  byte
-	experienceAndLevel  byte
-	x                   int32
-	y                   int32
-	z                   int32
-	gold                uint32
-	typeAndFlagsAndMana uint16
-	personHealth        uint16
+	name                [nameSize]byte // имя персонажа, зафиксировано на 42 байта
+	respectAndStrength  byte           // 4 бита: уважение, 4 бита: сила
+	experienceAndLevel  byte           // 4 бита: опыт, 4 бита: уровень
+	x, y, z             int32          // координаты в 3D пространстве
+	gold                uint32         // количество золота
+	typeAndFlagsAndMana uint16         // 3 бита: тип, 3 бит: флаги, 10 бит: мана
+	personHealth        uint16         // здоровье персонажа
 }
 
 func (p GamePerson) MarshalJSON() ([]byte, error) {
@@ -133,7 +142,7 @@ func (p GamePerson) MarshalJSON() ([]byte, error) {
 		"mana":       p.Mana(),
 		"hasHouse":   p.HasHouse(),
 		"hasGun":     p.HasGun(),
-		"hasFamily":  p.HasFamilty(),
+		"hasFamily":  p.HasFamily(),
 	}
 	return json.Marshal(m)
 }
@@ -154,7 +163,7 @@ func (p GamePerson) MarshalYAML() (interface{}, error) {
 		"mana":       p.Mana(),
 		"hasHouse":   p.HasHouse(),
 		"hasGun":     p.HasGun(),
-		"hasFamily":  p.HasFamilty(),
+		"hasFamily":  p.HasFamily(),
 	}
 	return m, nil
 }
@@ -270,61 +279,25 @@ func (p *GamePerson) Name() string {
 	return unsafe.String(unsafe.SliceData(p.name[:]), len(p.name))
 }
 
-func (p *GamePerson) X() int {
-	return int(p.x)
-}
-
-func (p *GamePerson) Y() int {
-	return int(p.y)
-}
-
-func (p *GamePerson) Z() int {
-	return int(p.z)
-}
-
-func (p *GamePerson) Gold() int {
-	return int(p.gold)
-}
-
-func (p *GamePerson) Mana() int {
-	return int(p.typeAndFlagsAndMana & 0b0000001111111111)
-}
-
-func (p *GamePerson) HasHouse() bool {
-	return int(((p.typeAndFlagsAndMana>>8)&0b00000100)>>2) == 1
-}
-
-func (p *GamePerson) HasGun() bool {
-	return int(((p.typeAndFlagsAndMana>>8)&0b00001000)>>3) == 1
-}
-
-func (p *GamePerson) HasFamilty() bool {
-	return int(((p.typeAndFlagsAndMana>>8)&0b00010000)>>4) == 1
-}
-
-func (p *GamePerson) Type() int {
-	return int(p.typeAndFlagsAndMana >> 13)
-}
-
-func (p *GamePerson) Health() int {
-	return int(p.personHealth)
-}
-
-func (p *GamePerson) Respect() int {
-	return int(p.respectAndStrength & 0b00001111)
-}
-
+func (p *GamePerson) X() int       { return int(p.x) }
+func (p *GamePerson) Y() int       { return int(p.y) }
+func (p *GamePerson) Z() int       { return int(p.z) }
+func (p *GamePerson) Gold() int    { return int(p.gold) }
+func (p *GamePerson) Mana() int    { return int(p.typeAndFlagsAndMana & manaMask) }
+func (p *GamePerson) Health() int  { return int(p.personHealth) }
+func (p *GamePerson) Respect() int { return int(p.respectAndStrength & low4BitsMask) }
 func (p *GamePerson) Strength() int {
-	return int((p.respectAndStrength & 0b11110000) >> 4)
+	return int((p.respectAndStrength & high4BitsMask) >> high4BitsShift)
 }
-
-func (p *GamePerson) Experience() int {
-	return int(p.experienceAndLevel & 0b00001111)
-}
-
+func (p *GamePerson) Experience() int { return int(p.experienceAndLevel & low4BitsMask) }
 func (p *GamePerson) Level() int {
-	return int((p.experienceAndLevel & 0b11110000) >> 4)
+	return int((p.experienceAndLevel & high4BitsMask) >> high4BitsShift)
 }
+
+func (p *GamePerson) HasHouse() bool  { return (p.typeAndFlagsAndMana>>flagsShift)&houseFlag != 0 }
+func (p *GamePerson) HasGun() bool    { return (p.typeAndFlagsAndMana>>flagsShift)&gunFlag != 0 }
+func (p *GamePerson) HasFamily() bool { return (p.typeAndFlagsAndMana>>flagsShift)&familyFlag != 0 }
+func (p *GamePerson) Type() int       { return int((p.typeAndFlagsAndMana & typeMask) >> typeShift) }
 
 func TestGamePerson(t *testing.T) {
 	assert.LessOrEqual(t, unsafe.Sizeof(GamePerson{}), uintptr(64))
@@ -389,7 +362,7 @@ func TestGamePerson(t *testing.T) {
 	assert.Equal(t, experience, person.Experience())
 	assert.Equal(t, level, person.Level())
 	assert.True(t, person.HasHouse())
-	assert.True(t, person.HasFamilty())
+	assert.True(t, person.HasFamily())
 	assert.False(t, person.HasGun())
 	assert.Equal(t, personType, person.Type())
 }
