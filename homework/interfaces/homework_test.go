@@ -46,7 +46,7 @@ func (c *Container) Resolve(name string) (interface{}, error) {
 func (c *Container) RegisterSingletonType(name string, constructor interface{}) (interface{}, error) {
 	serviceConstructor, ok := constructor.(func() interface{})
 	if !ok {
-		return nil, errors.New("service not found")
+		return nil, errors.New("constructor cast problem")
 	}
 
 	singleton, ok := c.singletons[name]
