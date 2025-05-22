@@ -19,6 +19,13 @@ type Person struct {
 	Married bool   `properties:"married"`
 }
 
+type House struct {
+	Number  int    `properties:"number"`
+	Address string `properties:"address,omitempty"`
+	City    string `properties:"city"`
+	IsEmpty bool   `properties:"empty"`
+}
+
 func Serialize(person any) string {
 	v := reflect.ValueOf(person)
 
@@ -151,6 +158,30 @@ func TestSerialization(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			result := Serialize(test.person)
+			assert.Equal(t, test.result, result)
+		})
+	}
+}
+
+func TestSerializationV2(t *testing.T) {
+	tests := map[string]struct {
+		house  House
+		result string
+	}{
+		"another struct": {
+			house: House{
+				Number:  231321412,
+				Address: "street Pushkina 32B",
+				City:    "Moscow",
+				IsEmpty: false,
+			},
+			result: "number=231321412\naddress=street Pushkina 32B\ncity=Moscow\nempty=false",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			result := Serialize(test.house)
 			assert.Equal(t, test.result, result)
 		})
 	}
