@@ -55,7 +55,7 @@ func Trace(stacks [][]uintptr) []uintptr {
 
 		next := (*uintptr)(unsafe.Pointer(current.uptr))
 		if _, ok := visited[*next]; !ok && *next != 0 {
-			queue = append(queue, el{*next, current.idx})
+			queue = append(queue, el{*next, current.idx + 1})
 		}
 	}
 
