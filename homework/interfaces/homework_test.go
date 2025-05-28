@@ -36,10 +36,16 @@ func (c *Container) RegisterType(name string, constructor interface{}) {
 }
 
 func (c *Container) Resolve(name string) (interface{}, error) {
+	singleton, ok := c.singletons[name]
+	if ok {
+		return singleton, nil
+	}
+
 	service, ok := c.services[name]
 	if !ok {
 		return nil, errors.New("service not found")
 	}
+
 	return service(), nil
 }
 
