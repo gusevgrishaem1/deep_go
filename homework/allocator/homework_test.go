@@ -12,22 +12,35 @@ import (
 
 func Defragment(memory []byte, pointers []unsafe.Pointer, byteSize int) {
 	i := 0
-	j := 0
-	for i < len(memory) {
-		if j < len(pointers) {
-			pnt := pointers[j]
-			memory[i] = *(*byte)(pnt)
-			pointers[j] = unsafe.Pointer(&memory[i])
-			for k := 0; k < byteSize-1; k++ {
-				i++
-				pnt = unsafe.Add(pnt, 1)
-				memory[i] = *(*byte)(pnt)
-			}
-			j++
-		} else {
-			memory[i] = 0x00
+	j := i + 1
+	k := 0
+	cleaner := make([]byte, byteSize)
+
+	for j < len(memory) {
+		if memory[i] != 0 {
+			pointers[k] = unsafe.Pointer(&memory[i])
+			k++
+
+			i += byteSize
+			j += byteSize
+
+			continue
 		}
-		i++
+
+		if memory[j] == 0 {
+			j++
+		}
+
+		if memory[j] != 0 && memory[i] == 0 {
+			copy(memory[i:i+byteSize], memory[j:j+byteSize])
+			copy(memory[j:j+byteSize], cleaner)
+
+			pointers[k] = unsafe.Pointer(&memory[i])
+			k++
+
+			i += byteSize
+			j += byteSize
+		}
 	}
 }
 
