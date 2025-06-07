@@ -14,7 +14,7 @@ import (
 
 type Person struct {
 	Name    string `properties:"name"`
-	Address string `properties:"address,omitempty"`
+	Address string `properties:"omitempty,address"`
 	Age     int    `properties:"age"`
 	Married bool   `properties:"married"`
 }
@@ -39,13 +39,22 @@ func Serialize(person any) string {
 		if isOmitempty(tags, v, i) {
 			continue
 		}
-		b.WriteString(tags[0] + "=" + getValue(v.Field(i)))
+		b.WriteString(getFieldName(tags) + "=" + getValue(v.Field(i)))
 		if i < v.NumField()-1 {
 			b.WriteString("\n")
 		}
 	}
 
 	return b.String()
+}
+
+func getFieldName(tags []string) string {
+	for _, tag := range tags {
+		if tag != "" && tag != "omitempty" {
+			return tag
+		}
+	}
+	return ""
 }
 
 func getTags(v reflect.Value, i int) []string {
@@ -55,7 +64,16 @@ func getTags(v reflect.Value, i int) []string {
 }
 
 func isOmitempty(parts []string, v reflect.Value, i int) bool {
-	return len(parts) > 1 && parts[1] == "omitempty" && IsEmpty(v.Field(i))
+	return len(parts) > 1 && isContainsOmitempty(parts) && IsEmpty(v.Field(i))
+}
+
+func isContainsOmitempty(parts []string) bool {
+	for _, part := range parts {
+		if part == "omitempty" {
+			return true
+		}
+	}
+	return false
 }
 
 func IsEmpty(rv reflect.Value) bool {
