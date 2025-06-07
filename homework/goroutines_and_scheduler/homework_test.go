@@ -7,63 +7,67 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type maxTaskPriorityHeap []Task
-
-func (h maxTaskPriorityHeap) Len() int {
-	return len(h)
-}
-
-func (h maxTaskPriorityHeap) Less(i, j int) bool {
-	return h[i].Priority > h[j].Priority
-}
-
-func (h maxTaskPriorityHeap) Swap(i, j int) {
-	h[i], h[j] = h[j], h[i]
-}
-
-func (h *maxTaskPriorityHeap) Push(val interface{}) {
-	*h = append(*h, val.(Task))
-}
-
-func (h *maxTaskPriorityHeap) Pop() interface{} {
-	elements := *h
-
-	size := len(elements)
-	val := elements[size-1]
-	*h = elements[:size-1]
-
-	return val
-}
-
 type Task struct {
 	Identifier int
 	Priority   int
 }
 
+type maxTaskPriorityHeap []Task
+
 type Scheduler struct {
-	h maxTaskPriorityHeap
+	h     maxTaskPriorityHeap
+	index map[int]int
+}
+
+func (s Scheduler) Len() int {
+	return len(s.h)
+}
+
+func (s Scheduler) Less(i, j int) bool {
+	return s.h[i].Priority > s.h[j].Priority
+}
+
+func (s Scheduler) Swap(i, j int) {
+	s.index[s.h[i].Identifier] = j
+	s.index[s.h[j].Identifier] = i
+	s.h[i], s.h[j] = s.h[j], s.h[i]
+}
+
+func (s *Scheduler) Push(val interface{}) {
+	s.h = append(s.h, val.(Task))
+}
+
+func (s *Scheduler) Pop() interface{} {
+	size := len(s.h)
+	val := s.h[size-1]
+	s.h = s.h[:size-1]
+
+	delete(s.index, val.Identifier)
+
+	return val
 }
 
 func NewScheduler() Scheduler {
-	return Scheduler{maxTaskPriorityHeap{}}
+	return Scheduler{maxTaskPriorityHeap{}, make(map[int]int)}
 }
 
 func (s *Scheduler) AddTask(task Task) {
-	heap.Push(&s.h, task)
+	s.index[task.Identifier] = len(s.h)
+	heap.Push(s, task)
 }
 
 func (s *Scheduler) ChangeTaskPriority(taskID int, newPriority int) {
-	for i, task := range s.h {
-		if task.Identifier == taskID {
-			s.h[i].Priority = newPriority
-			heap.Fix(&s.h, i)
-			return
-		}
+	idx, ok := s.index[taskID]
+	if !ok {
+		return
 	}
+
+	s.h[idx].Priority = newPriority
+	heap.Fix(s, idx)
 }
 
 func (s *Scheduler) GetTask() Task {
-	return heap.Pop(&s.h).(Task)
+	return heap.Pop(s).(Task)
 }
 
 func TestTrace(t *testing.T) {
