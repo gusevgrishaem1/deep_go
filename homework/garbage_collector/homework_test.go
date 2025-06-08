@@ -11,8 +11,63 @@ import (
 // go test -v homework_test.go
 
 func Trace(stacks [][]uintptr) []uintptr {
-	// need to implement
-	return nil
+	type el struct {
+		ptr uintptr
+		pos int
+	}
+
+	var result []uintptr
+	visited := make(map[uintptr]struct{})
+	var queue []el
+
+	// Первый проход — собираем все уникальные указатели из стеков
+	for _, stack := range stacks {
+		for _, ptr := range stack {
+			if ptr == 0 {
+				continue
+			}
+			if _, ok := visited[ptr]; ok {
+				continue
+			}
+			visited[ptr] = struct{}{}
+			pos := len(result)
+			result = append(result, ptr)
+
+			next := *(*uintptr)(unsafe.Pointer(ptr))
+			if next != 0 {
+				queue = append(queue, el{next, pos + 1})
+			}
+		}
+	}
+
+	// BFS
+	for len(queue) > 0 {
+		item := queue[0]
+		queue = queue[1:]
+
+		ptr := item.ptr
+		if ptr == 0 {
+			continue
+		}
+		if _, ok := visited[ptr]; ok {
+			continue
+		}
+		visited[ptr] = struct{}{}
+
+		// Вставка в нужную позицию
+		if item.pos >= len(result) {
+			result = append(result, ptr)
+		} else {
+			result = append(result[:item.pos], append([]uintptr{ptr}, result[item.pos:]...)...)
+		}
+
+		next := *(*uintptr)(unsafe.Pointer(ptr))
+		if next != 0 {
+			queue = append(queue, el{next, item.pos + 1})
+		}
+	}
+
+	return result
 }
 
 func TestTrace(t *testing.T) {
