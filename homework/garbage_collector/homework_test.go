@@ -10,52 +10,60 @@ import (
 
 // go test -v homework_test.go
 
-type el struct {
-	uptr uintptr
-	idx  int
-}
-
 func Trace(stacks [][]uintptr) []uintptr {
-	result := make([]uintptr, 0, len(stacks))
-	visited := make(map[uintptr]struct{}, len(stacks))
+	type el struct {
+		ptr uintptr
+		pos int
+	}
+
+	var result []uintptr
+	visited := make(map[uintptr]struct{})
 	var queue []el
 
-	for i := 0; i < len(stacks); i++ {
-		for j := 0; j < len(stacks[i]); j++ {
-			if stacks[i][j] == 0 {
+	// Первый проход — собираем все уникальные указатели из стеков
+	for _, stack := range stacks {
+		for _, ptr := range stack {
+			if ptr == 0 {
 				continue
 			}
-
-			if _, ok := visited[stacks[i][j]]; ok || stacks[i][j] == 0 {
+			if _, ok := visited[ptr]; ok {
 				continue
 			}
+			visited[ptr] = struct{}{}
+			pos := len(result)
+			result = append(result, ptr)
 
-			result = append(result, stacks[i][j])
-			visited[stacks[i][j]] = struct{}{}
-
-			next := (*uintptr)(unsafe.Pointer(stacks[i][j]))
-			if _, ok := visited[*next]; !ok && *next != 0 {
-				queue = append(queue, el{*next, len(result)})
+			next := *(*uintptr)(unsafe.Pointer(ptr))
+			if next != 0 {
+				queue = append(queue, el{next, pos + 1})
 			}
 		}
 	}
 
+	// BFS
 	for len(queue) > 0 {
-		current := queue[0]
+		item := queue[0]
 		queue = queue[1:]
-		if _, ok := visited[current.uptr]; ok || current.uptr == 0 {
+
+		ptr := item.ptr
+		if ptr == 0 {
 			continue
 		}
+		if _, ok := visited[ptr]; ok {
+			continue
+		}
+		visited[ptr] = struct{}{}
 
-		tmp := make([]uintptr, len(result)-current.idx)
-		copy(tmp, result[current.idx:])
-		result = result[:current.idx]
-		result = append(result, current.uptr)
-		result = append(result, tmp...)
+		// Вставка в нужную позицию
+		if item.pos >= len(result) {
+			result = append(result, ptr)
+		} else {
+			result = append(result[:item.pos], append([]uintptr{ptr}, result[item.pos:]...)...)
+		}
 
-		next := (*uintptr)(unsafe.Pointer(current.uptr))
-		if _, ok := visited[*next]; !ok && *next != 0 {
-			queue = append(queue, el{*next, current.idx + 1})
+		next := *(*uintptr)(unsafe.Pointer(ptr))
+		if next != 0 {
+			queue = append(queue, el{next, item.pos + 1})
 		}
 	}
 
